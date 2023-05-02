@@ -65,52 +65,28 @@ public class echeancier {
 		return - (Math.log(1 - r)) / d;
 	}
 	
-	public static void mode1(File fichier) {
-		try {
-			FileReader lecteurFichier = new FileReader(fichier);
-			BufferedReader lecteurBuffer = new BufferedReader(lecteurFichier);
-			FileWriter ecrivainFichier = new FileWriter("resultats.txt");
-			String ligne;
-	        while ((ligne = lecteurBuffer.readLine()) != null) {
-	        	cpt = 0;
-	        	double valeur = Double.parseDouble(ligne);
-	            int i = 0;
-	            echeancier e = new echeancier();
-	    		e.addEvent(0.0, EV_ARRIVEE);
-	    		while(cpt <  1000000 && i < l) {
-	    			evenement premier = premier();
-	    			T = (int) premier.getDate();
-	    			traitement1(premier,e,valeur);
-	    			if(cpt > 0) {
-	    				NewValue = (double) S_tpsAttente / (double) cpt;
-	    			}
-	    			if(Math.abs(DebRectangle - NewValue) > DebRectangle*(h/2)) {
-	    				DebRectangle = NewValue;
-	    				i = 0;
-	    			}else {
-	    				i++;
-	    			}
-	    		}
-	    		if(cpt >= 1000000) {
-	    		    ecrivainFichier.write("-1");
-	    		}else {
-	    		    double result = (double) S_tpsAttente / (double) T;
-	    		    ecrivainFichier.write(result + " ");
-	    		}
-	        }
-	        lecteurBuffer.close();
-	        lecteurFichier.close();
-	        ecrivainFichier.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	public static double mode1(double valeur) {
+        int i = 0;
+        cpt = 0;
+        N = 0;
+        NbrePcLibres = 10;
+        DebRectangle = 0;
+        NewValue = 0;
+        echeancier e = new echeancier();
+		e.addEvent(0.0, EV_ARRIVEE);
+		while(cpt <  1000000 && i < l) {
+			evenement premier = premier();
+			T = (int) premier.getDate();
+			traitement1(premier,e,valeur);
+			NewValue = (double) S_tpsAttente / (double) T;
+			if(Math.abs(DebRectangle - NewValue) > DebRectangle*(h/2)) {
+				DebRectangle = NewValue;
+				i = 0;
+			}else {
+				i++;
+			}
 		}
+		return (double) S_tpsAttente / (double) T;
 	}
 	
 	private static void traitement1(evenement premier, echeancier e, double valeur) {
@@ -132,20 +108,38 @@ public class echeancier {
 				last_T = T;
 			}
 			e.addEvent(T+exp(mu), EV_FIN_SERV);
-		}else {
+		}else if(premier.getType() == EV_FIN_SERV){
 			cpt++;
 			NbrePcLibres ++;
 			N--;
-			if(N > 0 && NbrePcLibres != 0) {
+			if(N > 0 && NbrePcLibres > 0) {
 				e.addEvent(T, EV_DEB_SERV);
 			}
 		}		
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String nomFichier = "lambda.txt";
 		File fichier = new File(nomFichier);
-		mode1(fichier);
+		FileReader lecteurFichier = new FileReader(fichier);
+		BufferedReader lecteurBuffer = new BufferedReader(lecteurFichier);
+		FileWriter ecrivainFichier = new FileWriter("resultats.txt");
+		String ligne;
+        while ((ligne = lecteurBuffer.readLine()) != null) {
+        	double valeur = Double.parseDouble(ligne);
+        	double result = mode1(valeur);
+        	ecrivainFichier.write(valeur + " ");
+        	System.out.println(cpt);
+        	if(cpt >= 1000000) {
+        		ecrivainFichier.write("-1 ");
+        	}else {
+        		ecrivainFichier.write(result + "");
+        	}
+        	ecrivainFichier.write(System.lineSeparator());
+        }
+        lecteurBuffer.close();
+        lecteurFichier.close();
+        ecrivainFichier.close();
 	}
 
 }
