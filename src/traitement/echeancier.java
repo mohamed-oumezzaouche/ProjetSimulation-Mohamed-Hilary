@@ -93,7 +93,7 @@ public class echeancier {
 				i++;
 			}
 		}
-		return (double) S_tpsAttente / (double) cpt;
+		return ((double) NewValue / (double) valeur) - 1;
 	}
 	
 	public static double mode2(double valeur) {
@@ -106,33 +106,33 @@ public class echeancier {
 			if(NbrePcLibres > 0) {
 				e.addEvent(T, EV_DEB_SERV);
 			}
-			if (T > last_T) {
+			/**if (T > last_T) {
 				if(N - nbreServeurs > 0) {
 					S_tpsAttente += (T - last_T)*(N - nbreServeurs);
 				}
 				last_T = T;
-	        }
-			if(T > last_T2) {
+	        }**/
+			if(T > last_T) {
 				S_clients += N;
-				last_T2 = T;
+				last_T = T;
 			}
 			e.addEvent(T+exp(valeur), EV_ARRIVEE);
 			N++;
 		}else if(premier.getType() == EV_DEB_SERV) {
-			S_tpsAttente += T - last_T;
+			/**S_tpsAttente += T - last_T;**/
 			NbrePcLibres --;
 			e.addEvent(T+exp(mu), EV_FIN_SERV);
 		}else if(premier.getType() == EV_FIN_SERV){
-			N--;
 			cpt++;
 			NbrePcLibres ++;
-			if(N - nbreServeurs >= 0) {
+			if(N - nbreServeurs > 0) {
 				e.addEvent(T, EV_DEB_SERV);
 			}
-			if(T > last_T2) {
+			if(T > last_T) {
 				S_clients += N;
-				last_T2 = T;
+				last_T = T;
 			}
+			N--;
 		}		
 	}
 
@@ -152,8 +152,8 @@ public class echeancier {
         	}else {
         		ecrivainFichier.write(result1 + " ");
         	}
-        	double result2 = mode2(valeur);
-        	/**if(cpt >= 1000000) {
+        	/**double result2 = mode2(valeur);
+        	if(cpt >= 1000000) {
         		ecrivainFichier.write("-1 ");
         	}else {
         		ecrivainFichier.write(result2 + "");
