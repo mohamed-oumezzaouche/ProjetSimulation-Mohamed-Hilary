@@ -15,16 +15,19 @@ public class echeancier {
 	public static int EV_DEB_SERV = 200;
 	public static int EV_FIN_SERV = 300;
 	public static int NbrePcLibres = 10;
+	public static int nbreServeurs = 10; 
 	public static int N = 0;
 	public static int mu = 1;
 	public static int cpt = 0;
-	public static int T = 0;
-	public static int last_T = 0;
+	public static double T = 0;
+	public static double last_T = 0;
 	public static int l = 1000;
 	public static double h = 0.001;
 	public static double NewValue;
 	public static double DebRectangle;
-	public static int S_tpsAttente = 0;
+	public static double S_tpsAttente = 0;
+	public static int S_clients = 0;
+	public static double last_T2 = 0;
 	
 	public int addEvent(double date, int type) {
 		int i = 0;
@@ -62,90 +65,104 @@ public class echeancier {
 	
 	public static double exp(double d) {
 		double r = Math.random() * ( 1 - 0 );
-		return - (Math.log(1 - r)) / d;
+		return - (Math.log(r)) / d;
 	}
 	
-	public static void mode1(File fichier) {
-		try {
-			FileReader lecteurFichier = new FileReader(fichier);
-			BufferedReader lecteurBuffer = new BufferedReader(lecteurFichier);
-			FileWriter ecrivainFichier = new FileWriter("resultats.txt");
-			String ligne;
-	        while ((ligne = lecteurBuffer.readLine()) != null) {
-	        	cpt = 0;
-	        	double valeur = Double.parseDouble(ligne);
-	            int i = 0;
-	            echeancier e = new echeancier();
-	    		e.addEvent(0.0, EV_ARRIVEE);
-	    		while(cpt <  1000000 && i < l) {
-	    			evenement premier = premier();
-	    			T = (int) premier.getDate();
-	    			traitement1(premier,e,valeur);
-	    			if(cpt > 0) {
-	    				NewValue = (double) S_tpsAttente / (double) cpt;
-	    			}
-	    			if(Math.abs(DebRectangle - NewValue) > DebRectangle*(h/2)) {
-	    				DebRectangle = NewValue;
-	    				i = 0;
-	    			}else {
-	    				i++;
-	    			}
-	    		}
-	    		if(cpt >= 1000000) {
-	    		    ecrivainFichier.write("-1");
-	    		}else {
-	    		    double result = (double) S_tpsAttente / (double) T;
-	    		    ecrivainFichier.write(result + " ");
-	    		}
-	        }
-	        lecteurBuffer.close();
-	        lecteurFichier.close();
-	        ecrivainFichier.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	public static double mode1(double valeur) {
+        int i = 0;
+        cpt = 0;
+        N = 0;
+        NbrePcLibres = 10;
+        DebRectangle = 0;
+        NewValue = 0;
+        S_tpsAttente = 0;
+        S_clients = 0;
+        last_T = 0;
+        last_T2 = 0;
+        echeancier e = new echeancier();
+		e.addEvent(0.0, EV_ARRIVEE);
+		while(cpt <  1000000 && i < l) {
+			evenement premier = premier();
+			T = premier.getDate();
+			traitement1(premier,e,valeur);
+			NewValue = (double) S_clients / (double) T;
+			if(Math.abs(DebRectangle - NewValue) > DebRectangle*(h/2)) {
+				DebRectangle = NewValue;
+				i = 0;
+			}else {
+				i++;
+			}
 		}
+		return ((double) NewValue / (double) valeur) - 1;
+	}
+	
+	public static double mode2(double valeur) {
+		return valeur;
+		
 	}
 	
 	private static void traitement1(evenement premier, echeancier e, double valeur) {
 		if(premier.getType() == EV_ARRIVEE) {
-			if(N == 0) {
+			if(NbrePcLibres > 0) {
 				e.addEvent(T, EV_DEB_SERV);
 			}
-			if (T > last_T) {
-	            last_T = T;
-	        }
-			N++;
-			e.addEvent(T+exp(valeur), EV_ARRIVEE);
-		}else if(premier.getType() == EV_DEB_SERV) {
-			double tempsAttente = T - premier.getDate(); // calcul du temps d'attente pour le client qui commence à être servi
-			S_tpsAttente += tempsAttente; // ajout du temps d'attente pour le client dans la somme des temps d'attente
-			NbrePcLibres --;
+			/**if (T > last_T) {
+				if(N - nbreServeurs > 0) {
+					S_tpsAttente += (T - last_T)*(N - nbreServeurs);
+				}
+				last_T = T;
+	        }**/
 			if(T > last_T) {
-				S_tpsAttente += T - last_T;
+				S_clients += N;
 				last_T = T;
 			}
+			e.addEvent(T+exp(valeur), EV_ARRIVEE);
+			N++;
+		}else if(premier.getType() == EV_DEB_SERV) {
+			/**S_tpsAttente += T - last_T;**/
+			NbrePcLibres --;
 			e.addEvent(T+exp(mu), EV_FIN_SERV);
-		}else {
+		}else if(premier.getType() == EV_FIN_SERV){
 			cpt++;
 			NbrePcLibres ++;
-			N--;
-			if(N > 0 && NbrePcLibres != 0) {
+			if(N - nbreServeurs > 0) {
 				e.addEvent(T, EV_DEB_SERV);
 			}
+			if(T > last_T) {
+				S_clients += N;
+				last_T = T;
+			}
+			N--;
 		}		
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String nomFichier = "lambda.txt";
 		File fichier = new File(nomFichier);
-		mode1(fichier);
+		FileReader lecteurFichier = new FileReader(fichier);
+		BufferedReader lecteurBuffer = new BufferedReader(lecteurFichier);
+		FileWriter ecrivainFichier = new FileWriter("resultats.txt");
+		String ligne;
+        while ((ligne = lecteurBuffer.readLine()) != null) {
+        	double valeur = Double.parseDouble(ligne);
+        	double result1 = mode1(valeur);
+        	ecrivainFichier.write(valeur + " ");
+        	if(cpt >= 1000000) {
+        		ecrivainFichier.write("-1 ");
+        	}else {
+        		ecrivainFichier.write(result1 + " ");
+        	}
+        	/**double result2 = mode2(valeur);
+        	if(cpt >= 1000000) {
+        		ecrivainFichier.write("-1 ");
+        	}else {
+        		ecrivainFichier.write(result2 + "");
+        	}**/
+        	ecrivainFichier.write(System.lineSeparator());
+        }
+        lecteurBuffer.close();
+        lecteurFichier.close();
+        ecrivainFichier.close();
 	}
 
 }
