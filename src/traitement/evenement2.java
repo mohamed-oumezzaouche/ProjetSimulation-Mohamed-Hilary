@@ -1,12 +1,14 @@
 package traitement;
 
-public class evenement {
+public class evenement2 {
   private int type;
   private double date;
+  private int numeroPC;
 
-  public evenement(double date, int type){
+  public evenement2(double date, int type, int numeroPC) {
     this.type = type;
     this.date = date;
+    this.numeroPC = numeroPC;
   }
 
   public int getType() {
@@ -17,4 +19,7 @@ public class evenement {
     return this.date;
   }
 
+  public int getNumeroPC() {
+    return this.numeroPC;
+  }
 }
